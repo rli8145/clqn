@@ -2,12 +2,12 @@
   "redirects": [
     {
       "source": "/docs/database.html",
-      "destination": "https://github.com/rli8145/clqn/blob/main/docs/database.md",
+      "destination": "https://github.com/clqn-org/clqn/blob/main/docs/database.md",
       "permanent": true
     },
     {
       "source": "/docs/hosting.html",
-      "destination": "https://github.com/rli8145/clqn/blob/main/docs/hosting.md",
+      "destination": "https://github.com/clqn-org/clqn/blob/main/docs/hosting.md",
       "permanent": true
     }
   ]

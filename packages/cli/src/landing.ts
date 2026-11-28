@@ -49,7 +49,7 @@ const noses = [
   '                  ppppp',
 ];
 const site = 'https://clqn.org';
-const repository = 'https://github.com/rli8145/clqn';
+const repository = 'https://github.com/clqn-org/clqn';
 const npm = 'https://www.npmjs.com/package/clqn-cli';
 
 // xterm 256-color palette entries, which render in every color terminal, unlike 24-bit color.

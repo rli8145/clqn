@@ -8,8 +8,8 @@
 </p>
 
 <p align="center">
-<a href="https://github.com/rli8145/clqn/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/rli8145/clqn/ci.yml?branch=main&style=for-the-badge" alt="Build status"></a>
-<a href="https://app.codecov.io/gh/rli8145/clqn"><img src="https://img.shields.io/codecov/c/github/rli8145/clqn?style=for-the-badge" alt="Test coverage"></a>
+<a href="https://github.com/clqn-org/clqn/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/clqn-org/clqn/ci.yml?branch=main&style=for-the-badge" alt="Build status"></a>
+<a href="https://app.codecov.io/gh/clqn-org/clqn"><img src="https://img.shields.io/codecov/c/github/clqn-org/clqn?style=for-the-badge" alt="Test coverage"></a>
 <img src="https://img.shields.io/badge/node-%3E%3D22.12-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js 22.12 or newer">
 <a href="https://npmjs.com/package/clqn-cli"><img src="https://img.shields.io/npm/v/clqn-cli?style=for-the-badge" alt="npm version"></a>
 <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="MIT license"></a>
@@ -33,8 +33,8 @@ npm install -g clqn-cli
 Or with Homebrew:
 
 ```sh
-brew tap rli8145/clqn https://github.com/rli8145/clqn
-brew install clqn
+brew tap clqn-org/clqn https://github.com/clqn-org/clqn
+brew install clqn-org/clqn/clqn
 ```
 
 You'll need Node.js 22.12+, Git, the GitHub CLI (`gh`), and [Claude Code](https://claude.com/claude-code) or [Codex CLI](https://github.com/openai/codex).
@@ -76,7 +76,7 @@ Press <kbd>Ctrl</kbd>+<kbd>S</kbd> for settings and <kbd>Ctrl</kbd>+<kbd>G</kbd>
 
 ## Contributing
 
-[Report an issue](https://github.com/rli8145/clqn/issues) or read the [contribution guide](CONTRIBUTING.md) before opening a pull request.
+[Report an issue](https://github.com/clqn-org/clqn/issues) or read the [contribution guide](CONTRIBUTING.md) before opening a pull request.
 
 ## License
 

@@ -9,7 +9,7 @@ The npm package is `clqn-cli`; its executable is `clqn`. It bundles the CLI, MCP
 ### Configure release access
 
 1. Under GitHub **Settings → Environments**, create `cli-release` and allow deployments from tags matching `v*`. To reserve release tags for specific maintainers, configure a `v*` tag ruleset.
-2. In the npm settings for `clqn-cli`, add a GitHub Actions trusted publisher for owner `rli8145`, repository `clqn`, workflow filename `ci.yml`, and environment `cli-release`. The workflow uses npm's short-lived OIDC credential and GitHub's built-in token. [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/)
+2. In the npm settings for `clqn-cli`, add a GitHub Actions trusted publisher for owner `clqn-org`, repository `clqn`, workflow filename `ci.yml`, and environment `cli-release`. The workflow uses npm's short-lived OIDC credential and GitHub's built-in token. [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/)
 
 ### Prepare
 
@@ -46,9 +46,9 @@ Rerun failed jobs for the original tag after an interruption. After the seven-da
 npm view clqn-cli version
 npm install -g clqn-cli
 clqn --version
-brew tap rli8145/clqn https://github.com/rli8145/clqn
-brew install rli8145/clqn/clqn
-brew test rli8145/clqn/clqn
+brew tap clqn-org/clqn https://github.com/clqn-org/clqn
+brew install clqn-org/clqn/clqn
+brew test clqn-org/clqn/clqn
 ```
 
 Changes to `website/download.html` ship through the [website deployment](#website-deployment) after checks pass on `main`.
@@ -57,13 +57,13 @@ Changes to `website/download.html` ship through the [website deployment](#websit
 
 A stable `vX.Y.Z` tag on a commit on `main` deploys the API after checks pass. The `deploy-api` job builds `clqn-api:<tag>`, runs the `clqn-migrate` job with it, updates the `clqn-api` Cloud Run service to the same image, and verifies that the new revision serves all traffic and answers `/ready`. Existing env vars, secrets, and network settings are kept.
 
-GitHub authenticates through Workload Identity Federation (pool and provider `github`, limited to `rli8145/clqn`) as `clqn-deployer`, which holds Cloud Run Developer, Artifact Registry Writer, and permission to act as `clqn-api`. No key is stored in GitHub. Under GitHub **Settings → Environments**, create `api-production` and allow deployments from tags matching `v*`. To roll back, run `gcloud run services update-traffic clqn-api --to-revisions <previous-revision>=100`; migrations are not reversed, so keep them additive. Cloud Run preserves pinned traffic on later deployments. When you are ready to resume deployments, restore automatic traffic routing with `gcloud run services update-traffic clqn-api --to-latest`.
+GitHub authenticates through Workload Identity Federation (pool and provider `github`, limited to `clqn-org/clqn`) as `clqn-deployer`, which holds Cloud Run Developer, Artifact Registry Writer, and permission to act as `clqn-api`. No key is stored in GitHub. Under GitHub **Settings → Environments**, create `api-production` and allow deployments from tags matching `v*`. To roll back, run `gcloud run services update-traffic clqn-api --to-revisions <previous-revision>=100`; migrations are not reversed, so keep them additive. Cloud Run preserves pinned traffic on later deployments. When you are ready to resume deployments, restore automatic traffic routing with `gcloud run services update-traffic clqn-api --to-latest`.
 
 Before releasing, confirm the existing `clqn-cleanup` Cloud Run job runs through the `clqn-cleanup-daily` Cloud Scheduler trigger at 09:00 UTC. After the API readiness check, the deploy job updates `clqn-cleanup` to the same release image.
 
 ## Website deployment
 
-After the Node.js 22 and 24 checks pass on the current `main` of `rli8145/clqn`, GitHub Actions deploys the tested static site to the Vercel project `andy-zhang-s-projects2/clqn`. It compares the public homepage, download page, docs index, logo, and groundhog art with the build.
+After the Node.js 22 and 24 checks pass on the current `main` of `clqn-org/clqn`, GitHub Actions deploys the tested static site to the Vercel project `andy-zhang-s-projects2/clqn`. It compares the public homepage, download page, docs index, logo, and groundhog art with the build.
 
 Under GitHub **Settings → Environments**, create `website-production`, restrict deployment branches to `main`, and add an environment secret named `VERCEL_TOKEN`. Use a dedicated token scoped to the Vercel team with permission to deploy the existing project. The workflow includes the nonsecret team and project IDs. [Vercel's GitHub Actions guide](https://vercel.com/kb/guide/how-can-i-use-github-actions-with-vercel)
 

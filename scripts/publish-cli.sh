@@ -11,7 +11,7 @@ archive="./dist/$name"
 cmp Formula/clqn.rb dist/clqn.rb
 digest=$(sha256sum "$archive" | cut -d' ' -f1)
 grep -Fxq "  sha256 \"$digest\"" Formula/clqn.rb
-grep -Fxq "  url \"https://github.com/rli8145/clqn/releases/download/$tag/$name\"" Formula/clqn.rb
+grep -Fxq "  url \"https://github.com/clqn-org/clqn/releases/download/$tag/$name\"" Formula/clqn.rb
 tar -xOzf "$archive" package/package.json | node -e '
   const manifest = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
   if (manifest.name !== "clqn-cli" || manifest.version !== process.argv[1]) {
@@ -47,7 +47,7 @@ esac
 # either state before creating anything, then verify any existing asset in full.
 release_state=$(gh api graphql -f query='
   query($tag: String!) {
-    repository(owner: "rli8145", name: "clqn") { release(tagName: $tag) { isDraft } }
+    repository(owner: "clqn-org", name: "clqn") { release(tagName: $tag) { isDraft } }
   }' -f tag="$tag" --jq '
     .data.repository.release | if . == null then "absent" elif .isDraft then "draft" else "published" end')
 if [[ "$release_state" == absent ]]; then

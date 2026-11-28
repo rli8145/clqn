@@ -12,7 +12,7 @@ const guides = [
 ];
 // Operator guides (hosting, database) stay in the repository, not on the user site.
 const published = new Set(guides.map(([slug]) => slug));
-const repositoryDocs = 'https://github.com/rli8145/clqn/blob/main/docs/';
+const repositoryDocs = 'https://github.com/clqn-org/clqn/blob/main/docs/';
 
 // Only repository-authored Markdown enters this build. Render it once so the
 // published pages and their fragment links work even with JavaScript disabled.

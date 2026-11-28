@@ -12,7 +12,7 @@ echo '{"name":"clqn-cli","version":"1.2.3"}' > package/package.json
 tar -czf "$archive" package
 digest=$(sha256sum "$archive" | cut -d' ' -f1)
 cat > Formula/clqn.rb <<EOF
-  url "https://github.com/rli8145/clqn/releases/download/v1.2.3/clqn-cli-1.2.3.tgz"
+  url "https://github.com/clqn-org/clqn/releases/download/v1.2.3/clqn-cli-1.2.3.tgz"
   sha256 "$digest"
 EOF
 cp Formula/clqn.rb dist/clqn.rb

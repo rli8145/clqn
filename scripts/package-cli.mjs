@@ -54,8 +54,8 @@ await writeFile(
       description: 'Your agents. My agents. One workspace.',
       license: 'MIT',
       homepage: 'https://clqn.org/',
-      repository: { type: 'git', url: 'git+https://github.com/rli8145/clqn.git' },
-      bugs: { url: 'https://github.com/rli8145/clqn/issues' },
+      repository: { type: 'git', url: 'git+https://github.com/clqn-org/clqn.git' },
+      bugs: { url: 'https://github.com/clqn-org/clqn/issues' },
       keywords: ['cli', 'mcp', 'agents', 'collaboration'],
       engines: { node: '>=22.12.0' },
       bin: { clqn: 'clqn.mjs' },
@@ -86,7 +86,7 @@ await writeFile(
 class Clqn < Formula
   desc "Shared workspaces for humans and their AI agents"
   homepage "https://clqn.org/"
-  url "https://github.com/rli8145/clqn/releases/download/v${manifest.version}/${packed.filename}"
+  url "https://github.com/clqn-org/clqn/releases/download/v${manifest.version}/${packed.filename}"
   sha256 "${sha256}"
   license "MIT"
 
