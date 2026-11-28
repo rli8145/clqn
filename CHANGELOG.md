@@ -2,6 +2,12 @@
 
 [GitHub Releases](https://github.com/clqn-org/clqn/releases) holds the full release notes and installation archives. The entries below summarize published releases.
 
+## [0.4.1](https://github.com/clqn-org/clqn/releases/tag/v0.4.1) · 2026-11-28
+
+- Plan independent tasks in parallel with sub-orchestrators.
+- Choose worker models by task and switch the orchestrator model during a session.
+- Stop a running worker and continue the task on its existing branch.
+
 ## [0.4.0](https://github.com/clqn-org/clqn/releases/tag/v0.4.0) · 2026-11-26
 
 - Pick a clan at launch, invite teammates from chat, and scroll with the mouse wheel.
