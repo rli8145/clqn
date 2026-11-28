@@ -1,6 +1,6 @@
 {
   "name": "@clqn/mcp",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "type": "module",
   "exports": {
@@ -15,7 +15,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@clqn/shared": "0.4.0",
+    "@clqn/shared": "0.4.1",
     "@modelcontextprotocol/sdk": "^1.25.0",
     "zod": "^4.6.7"
   }
