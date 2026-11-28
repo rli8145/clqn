@@ -46,3 +46,5 @@ Use a linked practice repository with a pull request check. Have a teammate join
 3. Review the diff and checks in GitHub. If you want clqn to merge it, the leader selects that PR with **Ctrl+L** and approves the displayed commit with **Y**. Keep the leader's chat open while GitHub finishes its checks and applies repository merge rules.
 
 See the [repository workflow](repositories.md) for worktrees, review, and default-branch sync. For setup and connection problems, see [troubleshooting](troubleshooting.md). See [architecture and trust boundaries](architecture.md) for where requests and data go.
+
+See the [changelog](https://github.com/clqn-org/clqn/blob/main/CHANGELOG.md) for highlights from published releases.
