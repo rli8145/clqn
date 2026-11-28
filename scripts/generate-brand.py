@@ -1,4 +1,4 @@
-"""Rebuild clqn's logos, README GIF and animated website illustration."""
+"""Rebuild clqn's logos and README GIF."""
 
 from itertools import groupby
 from pathlib import Path
@@ -7,7 +7,6 @@ from PIL import Image, ImageDraw
 
 
 ASSETS = Path(__file__).resolve().parents[1] / "docs" / "assets"
-WEBSITE = ASSETS.parents[1] / "website"
 PAPER = "#f9faf7"
 INK = "#20231f"
 DESCRIPTION = "Three pixel groundhogs in separate holes staggered back, front-left, and front-right."
@@ -48,7 +47,7 @@ SEQUENCE = [
 ]
 
 
-def groundhog(height, highlights=True):
+def groundhog(height):
     sprite = Image.new("RGBA", (23, 40))
     d = ImageDraw.Draw(sprite)
     outline = [(7, 0), (15, 0), (15, 1), (18, 1), (18, 3),
@@ -59,9 +58,8 @@ def groundhog(height, highlights=True):
                (19, 5), (19, 8), (19, 39), (3, 39), (3, 6),
                (4, 6), (4, 4), (7, 4)], fill="#ae805b")
     d.rectangle((17, 8, 19, 39), fill="#866047")
-    if highlights:
-        d.rectangle((5, 5, 7, 9), fill="#d7b28a")
-        d.rectangle((8, 3, 13, 4), fill="#d7b28a")
+    d.rectangle((5, 5, 7, 9), fill="#d7b28a")
+    d.rectangle((8, 3, 13, 4), fill="#d7b28a")
     for x in (6, 15):
         d.rectangle((x, 9, x + 1, 13), fill="#241f24")
         d.point((x, 9), fill=PAPER)
@@ -74,7 +72,7 @@ def groundhog(height, highlights=True):
     return sprite.crop((0, 0, 23, height))
 
 
-def icon(heights=REST, ascii_art=False):
+def icon(heights=REST):
     image = Image.new("RGBA", SIZE)
     for (cx, cy), height in zip(HOLES, heights):
         d = ImageDraw.Draw(image)
@@ -86,11 +84,7 @@ def icon(heights=REST, ascii_art=False):
         d.rectangle((cx-11, cy-2, cx+11, cy+2), fill="#392d2b")
         d.rectangle((cx-8, cy-3, cx+8, cy+3), fill="#392d2b")
         if height:
-            if ascii_art:
-                # ASCII samples every other row. Keep the sprite's top on an even
-                # row so single-pixel eye highlights never flicker or disappear.
-                height += (cy + 1 - height) % 2
-            image.alpha_composite(groundhog(height, highlights=not ascii_art), (cx-11, cy+1-height))
+            image.alpha_composite(groundhog(height), (cx-11, cy+1-height))
         d = ImageDraw.Draw(image)
         # Front lip occludes the feet, even when the sprite is almost underground.
         d.rectangle((cx-10, cy+2, cx+10, cy+4), fill="#ae805b")
@@ -98,9 +92,6 @@ def icon(heights=REST, ascii_art=False):
         d.rectangle((cx-12, cy, cx-10, cy+2), fill="#d7b28a")
         d.rectangle((cx+10, cy+2, cx+13, cy+3), fill="#d7b28a")
         d.rectangle((cx-6, cy+3, cx-4, cy+3), fill="#d7b28a")
-        if ascii_art:
-            # Keep a continuous bright front rim visible over every emerging body.
-            d.rectangle((cx-9, cy+2, cx+9, cy+3), fill="#392d2b")
     return image
 
 
@@ -162,66 +153,6 @@ def scale(image, factor):
     return image.resize((image.width * factor, image.height * factor), Image.Resampling.NEAREST)
 
 
-def ascii_rows(heights):
-    """Sample two vertical pixels per monospace cell to preserve the silhouette."""
-    palette = {
-        "#392d2b": ("#", "#ffe0a3"), "#ae805b": (":", "#c48a4e"),
-        "#866047": (".", "#9b693f"), "#d7b28a": ("+", "#ffe7b9"),
-        "#241f24": ("@", "#090b0e"), PAPER: ("*", "#ffffff"),
-        "#e894a5": ("O", "#ff77bf"), "#ffe1dc": ("*", "#fff4fb"),
-        "#ba657f": ("=", "#ff94cf"),
-    }
-    # Trim unused side padding so more of the artwork fits the website.
-    grid = icon(heights, ascii_art=True).crop((10, 0, 78, SIZE[1])).resize((68, SIZE[1] // 2), Image.Resampling.NEAREST)
-    rows = []
-    for y in range(grid.height):
-        runs = []
-        x = 0
-        for rgba, run in groupby(grid.getpixel((col, y)) for col in range(grid.width)):
-            length = sum(1 for _ in run)
-            if rgba[3]:
-                char, fill = palette["#%02x%02x%02x" % rgba[:3]]
-                runs.append(f'<tspan x="{x * 10}" fill="{fill}" textLength="{length * 10}" lengthAdjust="spacingAndGlyphs">{char * length}</tspan>')
-            x += length
-        rows.append("".join(runs))
-    return rows
-
-
-def write_website():
-    # Text-only ASCII frames share the pixel logo's poses and timing.
-    width, height = 680, SIZE[1] * 10
-    poses = list(dict.fromkeys(pose for _, pose in SEQUENCE))
-    lines = {}
-    frames = []
-    for i, pose in enumerate(poses):
-        references = []
-        for y, row in enumerate(ascii_rows(pose)):
-            line_id = lines.setdefault(row, len(lines))
-            references.append(f'<use href="#r{line_id}" y="{16 + y * 20}"/>')
-        frames.append(f'<g transform="translate(0 {height * i})">{"".join(references)}</g>')
-    definitions = "".join(f'<text id="r{i}">{row}</text>' for row, i in lines.items())
-    rest = "".join(f'<text y="{16 + y * 20}">{row}</text>' for y, row in enumerate(ascii_rows(REST)))
-    elapsed = 0
-    steps = []
-    for duration, pose in SEQUENCE:
-        steps.append(f'{elapsed / 60:.3f}% {{transform:translateY(-{height * poses.index(pose)}px)}}')
-        elapsed += duration
-    opening = f'<svg xmlns="http://www.w3.org/2000/svg" width="680" height="620" viewBox="0 0 {width} {height}" overflow="hidden" role="img" aria-labelledby="title"><title id="title">Three ASCII groundhogs popping out of separate holes</title>'
-    font = 'font-family="monospace" font-size="16" font-weight="bold"'
-    still = opening + f'<g {font}>{rest}</g></svg>\n'
-    animated = opening + f"""
-<style>
-.strip {{display:none}}
-@media (prefers-reduced-motion: no-preference) {{.rest {{display:none}} .strip {{display:inline;animation: pop 6000ms step-end infinite}}}}
-@keyframes pop {{{' '.join(steps)} 100% {{transform:translateY(0)}}}}
-</style>
-<defs>{definitions}</defs>
-<g {font}><g class="rest">{rest}</g><g class="strip">{''.join(frames)}</g></g></svg>
-"""
-    (WEBSITE / "groundhogs-still.svg").write_text(still)
-    (WEBSITE / "groundhogs.svg").write_text(animated)
-
-
 def main():
     # Use shared bounds across poses so no hidden canvas padding separates the wordmark.
     boxes = [icon(pose).getbbox() for pose in [REST] + [pose for _, pose in SEQUENCE]]
@@ -249,7 +180,6 @@ def main():
   </g>'''
     write_svg("header.svg", size, 3, header, DESCRIPTION)
 
-    write_website()
     frames = []
     for _, heights in SEQUENCE:
         frame = Image.new("RGBA", size, PAPER)
