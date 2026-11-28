@@ -4,6 +4,7 @@ import { type ChatMessage, type ChatState, defaultChatSettings } from '@clqn/sha
 import {
   chatFrame,
   messageLines,
+  orchestratorModelField,
   painter,
   plannerLimitField,
   settingsFields,
@@ -60,6 +61,22 @@ test('parallel planning is editable above Save settings and displays Auto for a 
     assert.ok(lines.length <= 10);
     assert.ok(lines.includes(`› Planners         ${label}`));
   }
+});
+
+test('host settings show the orchestrator model and recommend stronger reasoning', () => {
+  const settings = {
+    value: defaultChatSettings,
+    tokenText: '',
+    agentText: '',
+    modelText: '',
+    field: orchestratorModelField,
+    action: 'Start session',
+  };
+  const render = (extra: Partial<Parameters<typeof settingsLines>[0]>) =>
+    settingsLines({ ...settings, ...extra }, 65, painter(false), 20, '').join('\n');
+  assert.doesNotMatch(render({}), /Host model/);
+  assert.match(render({ orchestratorRuntime: 'codex' }), /› Host model       Default \(Codex\)/);
+  assert.match(render({ orchestratorRuntime: 'claude' }), /A stronger reasoning model is recommended/);
 });
 
 test('answers sit right below the message they answer', () => {

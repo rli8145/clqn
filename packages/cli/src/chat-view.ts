@@ -1,5 +1,6 @@
 import { type ChatMessage, type ChatSettings, type ChatState, defaultPlannerLimit } from '@clqn/shared';
 
+import type { AgentChoices } from './agent-runner.js';
 import { type Runtime, runtimeNames } from './agent-session.js';
 import { markdownLines } from './markdown.js';
 import { terminalSizeNotice } from './terminal.js';
@@ -87,7 +88,8 @@ interface SettingsView {
   // The leader's draft for the clan's parallel planning limit; undefined hides the row.
   plannerText?: string | undefined;
   // Agent CLIs on this machine; undefined until they are found.
-  agents?: { installed: Runtime[]; off: Runtime[] } | undefined;
+  agents?: AgentChoices | undefined;
+  orchestratorRuntime?: Runtime | undefined;
   // The email being typed in the leader-only Invite row; undefined hides the row.
   inviteText?: string | undefined;
   // The clan name being typed in the leader-only Delete clan row; undefined hides the row.
@@ -216,13 +218,21 @@ function agentsText(agents: SettingsView['agents']) {
 export const backupHostingField = 9;
 export const deleteClanField = 10;
 export const plannerLimitField = 11;
-export const settingsFields = (hasInvite: boolean, hasBackup: boolean, hasDelete = false, hasPlanner = false) => [
+export const orchestratorModelField = 12;
+export const settingsFields = (
+  hasInvite: boolean,
+  hasBackup: boolean,
+  hasDelete = false,
+  hasPlanner = false,
+  hasOrchestratorModel = false,
+) => [
   0,
   1,
   2,
   3,
   4,
   5,
+  ...(hasOrchestratorModel ? [orchestratorModelField] : []),
   ...(hasInvite ? [6] : []),
   ...(hasPlanner ? [plannerLimitField] : []),
   ...(hasBackup ? [backupHostingField] : []),
@@ -234,11 +244,13 @@ export const settingsFields = (hasInvite: boolean, hasBackup: boolean, hasDelete
 // The selected setting row and the notice always fit; the hint, title, key help, and blank lines fill what room is left.
 export function settingsLines(settings: SettingsView, columns: number, paint: Paint, room: number, notice: string) {
   const hasInvite = settings.inviteText !== undefined;
+  const runtime = settings.orchestratorRuntime;
   const fields = settingsFields(
     hasInvite,
     settings.backupHosting !== undefined,
     settings.deleteText !== undefined,
     settings.plannerText !== undefined,
+    runtime !== undefined,
   );
   const labels = [
     `Spawn approval   ${settings.value.approval === 'manual' ? 'Manual' : 'Automatic'}`,
@@ -260,7 +272,9 @@ export function settingsLines(settings: SettingsView, columns: number, paint: Pa
           ? 'Press Enter to allow or stop backup hosting on this device.'
           : settings.field === plannerLimitField
             ? `Enter a maximum for the clan. Auto allows up to ${defaultPlannerLimit}, depending on available memory.`
-            : 'Enter a whole number or none for unlimited; models comma-separated, blank for any.';
+            : settings.field === orchestratorModelField
+              ? 'A stronger reasoning model is recommended. Enter a model ID, or leave it blank for the default. Saving applies to new turns.'
+              : 'Enter a whole number or none for unlimited; models comma-separated, blank for any.';
   const hintLines = wrap(hint, columns).map((line) => paint(line, 'muted'));
   // In the smallest terminals, show the rows around the selected one when they do not all fit.
   const shownRows = Math.max(1, Math.min(fields.length, room - (notice ? 1 : 0)));
@@ -292,7 +306,9 @@ export function settingsLines(settings: SettingsView, columns: number, paint: Pa
             ? `Delete clan      ${plain(settings.deleteText ?? '') || 'Type the clan name'}`
             : field === plannerLimitField
               ? `Planners         ${plain(settings.plannerText ?? '') || 'Auto'}`
-              : labels[field]!;
+              : field === orchestratorModelField && runtime
+                ? `Host model       ${plain(settings.agents?.orchestratorModels[runtime] ?? '') || 'Default'} (${runtimeNames[runtime]})`
+                : labels[field]!;
       const line = clip(`${field === settings.field ? '›' : ' '} ${label}`, columns);
       return field === settings.field ? paint(line, 'accent') : line;
     }),
