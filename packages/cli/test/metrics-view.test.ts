@@ -118,7 +118,7 @@ test('chat screen offers Ctrl+G metrics, drops the token graph, and settings fit
       tokenText: '5000',
       agentText: '2',
       modelText: 'model-a, model-b',
-      agents: { installed: ['codex', 'claude'], off: ['codex'] },
+      agents: { installed: ['codex', 'claude'], off: ['codex'], orchestratorModels: { codex: '', claude: '' } },
       field: 7,
       action: 'Save settings',
     },

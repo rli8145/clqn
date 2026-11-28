@@ -23,15 +23,18 @@ import {
   agentOutput,
   agentProfilePath,
   installedRuntimes,
+  orchestratorRuntime,
   type Runtime,
   readAgentProfile,
   readAgentsOff,
   readBackupHosting,
+  readOrchestratorModel,
   runtimeNames,
   runtimes,
   saveAgentProfile,
   saveAgentsOff,
   saveBackupHosting,
+  saveOrchestratorModel,
 } from './agent-session.js';
 import { configDirectory, writePrivateJson } from './config.js';
 import {
@@ -78,6 +81,7 @@ export interface AgentRunnerOptions {
 export interface AgentChoices {
   installed: Runtime[];
   off: Runtime[];
+  orchestratorModels: Record<Runtime, string>;
 }
 export interface AgentRunner {
   update(state: ChatState): void;
@@ -85,8 +89,9 @@ export interface AgentRunner {
   // Calls back after each orchestrator turn, when the chat has likely changed.
   listen(listener: () => void): void;
   // The agent CLIs on this machine and which are turned off. Changing them reconnects this member's workers.
-  choices(): Promise<AgentChoices>;
+  choices(userId: string): Promise<AgentChoices>;
   choose(off: Runtime[]): Promise<void>;
+  setOrchestratorModel(userId: string, runtime: Runtime, model: string): Promise<void>;
   backupHosting(): boolean | undefined;
   setBackupHosting(enabled: boolean): Promise<void>;
   // Running tasks this member can stop, with when this machine started each (undefined if it did not).
@@ -198,7 +203,7 @@ async function prepare(
   }
   const backup = state.orchestration?.backup ?? false;
   const hosting = canHost(state, backupHosting);
-  const runtime = on[0] ?? (backup ? undefined : installed[0]);
+  const runtime = orchestratorRuntime(installed, off, backup);
   let orchestrator: Connection | undefined;
   if (hosting && runtime) {
     const existing = agents.find(({ role, ownerId }) => role === 'orchestrator' && ownerId === user.id);
@@ -456,9 +461,13 @@ export function startAgentRunner(options: AgentRunnerOptions): AgentRunner {
   ) {
     // An empty cwd keeps repository skills and configuration out of planning turns.
     orchestrationDirectory ??= mkdtemp(join(tmpdir(), 'clqn-orchestration-'));
-    const cwd = await orchestrationDirectory;
+    // Read the saved choice once per turn so a switch leaves active turns and the lease alone.
+    const [cwd, model] = await Promise.all([
+      orchestrationDirectory,
+      identity && readOrchestratorModel(options.server, options.clanId, identity.id, connection.runtime),
+    ]);
     signal.throwIfAborted();
-    const { ok, output } = await launch(name, connection, cwd, 'orchestrator', prompt, { instructions, signal });
+    const { ok, output } = await launch(name, connection, cwd, 'orchestrator', prompt, { model, instructions, signal });
     signal.throwIfAborted();
     if (!ok || !output.text) throw new Error(output.error ?? 'The agent returned no decision');
     return output.text;
@@ -853,10 +862,21 @@ export function startAgentRunner(options: AgentRunnerOptions): AgentRunner {
           .join(' · ') || undefined
       );
     },
-    async choices() {
-      const [installed, off] = await Promise.all([(options.runtimes ?? installedRuntimes)(), readAgentsOff()]);
-      return { installed, off };
+    async choices(userId) {
+      const [installed, off, models] = await Promise.all([
+        (options.runtimes ?? installedRuntimes)(),
+        readAgentsOff(),
+        Promise.all(
+          runtimes.map(
+            async (runtime) =>
+              [runtime, await readOrchestratorModel(options.server, options.clanId, userId, runtime)] as const,
+          ),
+        ),
+      ]);
+      return { installed, off, orchestratorModels: Object.fromEntries(models) as Record<Runtime, string> };
     },
+    setOrchestratorModel: (userId, runtime, model) =>
+      saveOrchestratorModel(options.server, options.clanId, userId, runtime, model),
     async choose(off) {
       await saveAgentsOff(off);
       if (lease && latest?.orchestration?.backup && off.includes(lease.connection.runtime)) stopHosting();
