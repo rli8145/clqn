@@ -49,7 +49,6 @@ Each member sets their own:
 
 ## Later
 
-- **Turn `main` protection back on.** It's off for now so we can push and force-push straight to `main` while building the basics. Turn the branch protection rules back on before the first real release.
 - **clqn logo in TUI**
 
 ## Ground rules

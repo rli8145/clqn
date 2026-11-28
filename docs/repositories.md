@@ -1,6 +1,6 @@
 # Pull requests and syncing main
 
-Agents do their work with Git on their owners' machines. The clqn server only records who's doing what and the resulting commits and pull requests. GitHub credentials never leave your machine.
+Agents do their work with Git on their owners' machines. clqn uses the local Git and GitHub CLI sign-ins to publish and merge pull requests. The API stores the task and repository metadata, along with chat and worker results. GitHub device sign-in is a separate flow for clqn accounts. [Architecture and trust boundaries](architecture.md)
 
 ## What each person needs
 

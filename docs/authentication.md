@@ -4,7 +4,7 @@
 
 Run `clqn`, open the GitHub link it shows, and enter the one-time code. clqn needs your verified primary GitHub email to find your invitations. Check who you're signed in as with `clqn whoami`.
 
-To sign out, choose **Sign out** in chat settings (**Ctrl+S**). It revokes the saved credential and deletes this server's saved settings on this computer, even if the server can't be reached.
+To sign out, choose **Sign out** in chat settings (**Ctrl+S**). clqn attempts to revoke the saved credential on the server and always removes this server's saved settings from the computer. It warns you if server-side revocation did not succeed.
 
 clqn uses the hosted server by default. For a self-hosted server, run `clqn --api-url https://clqn.example.com` once; clqn remembers it after you sign in.
 
@@ -70,7 +70,7 @@ Keep tokens, and any settings file that contains them, out of Git.
 - The server checks clan membership and task ownership on every request. Only the assigned worker can claim a task, and two claims can't both succeed.
 - Changes and their audit events are saved together.
 - Chat messages and shared task text are treated as untrusted data. Only approved tasks lead to real work.
-- GitHub tokens stay in server memory during sign-in and are never stored. Revoking clqn's GitHub authorization doesn't revoke clqn tokens already issued; sign out to do that.
+- During device sign-in, the API uses GitHub's OAuth token in memory and discards it after checking your account. GitHub authorization and clqn credentials have separate lifetimes. To revoke the saved clqn credential, sign out while the API is reachable.
 - clqn identifies GitHub accounts by numeric ID. If your account collides with an operator-created account, or your primary email changed, ask your operator.
 
 ## API
