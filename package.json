@@ -30,7 +30,7 @@
     "user": "npm run user --workspace @clqn/api --"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.6.8",
+    "@biomejs/biome": "2.6.9",
     "@types/node": "^26.6.6",
     "esbuild": "0.28.2",
     "marked": "18.2.1",
