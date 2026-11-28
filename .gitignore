@@ -8,3 +8,4 @@ coverage/
 lcov.info
 .DS_Store
 PLAN.md
+.claude/worktrees/
