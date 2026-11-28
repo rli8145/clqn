@@ -14,7 +14,7 @@ import {
   type SendChat,
 } from '@clqn/shared';
 import type { AgentChoices } from './agent-runner.js';
-import type { Runtime } from './agent-session.js';
+import { orchestratorRuntime, type Runtime, runtimes } from './agent-session.js';
 import {
   backupHostingField,
   characters,
@@ -23,6 +23,7 @@ import {
   deleteClanField,
   type Frame,
   messageLines,
+  orchestratorModelField,
   painter,
   plain,
   plannerLimitField,
@@ -85,8 +86,9 @@ export interface ChatAgents {
   // Calls back after each orchestrator turn, when the chat has likely changed.
   listen?(listener: () => void): void;
   // The agent CLIs installed on this machine and which the member turned off.
-  choices(): Promise<AgentChoices>;
+  choices(userId: string): Promise<AgentChoices>;
   choose(off: Runtime[]): Promise<void>;
+  setOrchestratorModel(userId: string, runtime: Runtime, model: string): Promise<void>;
   backupHosting(): boolean | undefined;
   setBackupHosting(enabled: boolean): Promise<void>;
   // Running tasks this member can stop, with when this machine started each.
@@ -101,7 +103,7 @@ function nextChoice(choices: AgentChoices, step: number): AgentChoices {
   const mask = installed.reduce((bits, runtime, index) => bits | (choices.off.includes(runtime) ? 1 << index : 0), 0);
   const next = (mask + step + combinations) % combinations;
   const kept = choices.off.filter((runtime) => !installed.includes(runtime));
-  return { installed, off: [...kept, ...installed.filter((_, index) => next & (1 << index))] };
+  return { ...choices, off: [...kept, ...installed.filter((_, index) => next & (1 << index))] };
 }
 
 // Resolves when the user quits, with 'sign-out' when they choose Sign out in settings, or with a notice
@@ -213,6 +215,13 @@ export async function runChat(
     return state?.orchestration?.backup && setup?.inviteText === undefined ? agents?.backupHosting() : undefined;
   }
 
+  function modelRuntime() {
+    const hosting = state?.orchestration;
+    const choices = setup?.agents;
+    if (choices && (state ? state.work && hosting?.eligible : info.canStart))
+      return orchestratorRuntime(choices.installed, choices.off, hosting?.backup ?? false);
+  }
+
   function draw() {
     if (closed) return;
     const session = state?.session ?? info.session;
@@ -231,6 +240,7 @@ export async function runChat(
     const settings = setup && {
       ...setup,
       backupHosting: backupHosting(),
+      orchestratorRuntime: modelRuntime(),
       action: busy
         ? 'Connecting…'
         : state
@@ -382,12 +392,17 @@ export async function runChat(
   }
 
   async function loadChoices() {
+    const currentSetup = setup;
+    const initialChoices = currentSetup?.agents;
     try {
-      saved = await agents?.choices();
+      const choices = await agents?.choices(actor.id);
+      if (currentSetup && setup === currentSetup && !busy && currentSetup.agents === initialChoices) {
+        saved = choices;
+        currentSetup.agents = choices;
+      }
     } catch {
-      saved = undefined;
+      // Keep the last known choices if the refresh fails.
     }
-    if (setup && saved) setup.agents ??= saved;
     draw();
   }
 
@@ -406,23 +421,26 @@ export async function runChat(
       }
       const { value, tokenText, agentText, modelText, plannerText, originalPlannerLimit } = setup;
       const plannerLimit = plannerText === undefined ? undefined : parallelPlanning(plannerText);
-      await api.joinChat(
-        clanId,
-        {
-          ...value,
-          tokenLimit: numeric(tokenText),
-          agentLimit: numeric(agentText),
-          allowedModels: models(modelText),
-        },
-        controller.signal,
-      );
+      const settings = {
+        ...value,
+        tokenLimit: numeric(tokenText),
+        agentLimit: numeric(agentText),
+        allowedModels: models(modelText),
+      };
+      const chosen = setup.agents;
+      if (chosen && agents && saved) {
+        for (const runtime of runtimes) {
+          const model = chosen.orchestratorModels[runtime];
+          if (model !== saved.orchestratorModels[runtime]) await agents.setOrchestratorModel(actor.id, runtime, model);
+        }
+      }
+      await api.joinChat(clanId, settings, controller.signal);
       if (plannerLimit !== undefined && plannerLimit !== originalPlannerLimit) {
         await api.setChatPlannerLimit(clanId, plannerLimit, controller.signal);
         setup.originalPlannerLimit = plannerLimit;
       }
-      const chosen = setup.agents;
-      if (chosen && agents && chosen.off.join() !== saved?.off.join()) {
-        await agents.choose(chosen.off);
+      if (chosen && agents) {
+        if (chosen.off.join() !== saved?.off.join()) await agents.choose(chosen.off);
         saved = chosen;
       }
       mergeState(await api.chatState(clanId, controller.signal));
@@ -577,11 +595,13 @@ export async function runChat(
   function setupKey(text: string, key: Key) {
     if (!setup || busy) return;
     if (!state && options?.page && terminalSizeNotice(columns(), rows())) return;
+    const runtime = modelRuntime();
     const fields = settingsFields(
       setup.inviteText !== undefined,
       backupHosting() !== undefined,
       setup.deleteText !== undefined,
       setup.plannerText !== undefined,
+      runtime !== undefined,
     );
     if (key.name === 'escape') {
       if (!state) {
@@ -629,6 +649,15 @@ export async function runChat(
         setup.field = fields[(fields.indexOf(setup.field) + 1) % fields.length]!;
         replaceField = true;
       }
+    } else if (setup.field === orchestratorModelField && runtime && setup.agents) {
+      const choices = setup.agents;
+      let model = choices.orchestratorModels[runtime];
+      if (key.name === 'backspace') model = model.slice(0, -1);
+      else if (text && /^[^\x00-\x1f\x7f-\x9f]+$/.test(text) && !key.ctrl && !key.meta)
+        model = ((replaceField ? '' : model) + text).slice(0, 200);
+      else return;
+      setup.agents = { ...choices, orchestratorModels: { ...choices.orchestratorModels, [runtime]: model } };
+      replaceField = false;
     } else if ((setup.field >= 1 && setup.field <= 3) || setup.field === plannerLimitField) {
       const field =
         setup.field === plannerLimitField
@@ -775,7 +804,7 @@ export async function runChat(
         else if (setup?.inviteText !== undefined && setup.field === 6) {
           setup.inviteText = ((replaceField ? '' : setup.inviteText) + plain(paste).trim()).slice(0, 254);
           replaceField = false;
-        }
+        } else if (setup?.field === orchestratorModelField) setupKey(paste.trim(), {});
         paste = undefined;
         draw();
       } else if (paste.length < 4000) {
