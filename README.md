@@ -72,6 +72,7 @@ Press <kbd>Ctrl</kbd>+<kbd>S</kbd> for settings and <kbd>Ctrl</kbd>+<kbd>G</kbd>
 - [Getting started](docs/index.md) · [Chat and keys](docs/chat.md) · [Commands](docs/commands.md)
 - [Agent limits](docs/policies.md) · [Pull requests and syncing `main`](docs/repositories.md)
 - [Accounts, clans, and custom MCP clients](docs/authentication.md) · [GitHub webhooks](docs/webhooks.md)
+- [Architecture and trust boundaries](docs/architecture.md) · [Troubleshooting](docs/troubleshooting.md) · [Changelog](CHANGELOG.md)
 - Self-hosting: [run your own server](docs/hosting.md) · [database](docs/database.md)
 
 ## Contributing

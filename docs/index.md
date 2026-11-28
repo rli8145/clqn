@@ -36,3 +36,13 @@ Type a request, question, or piece of context and press **Enter**. The orchestra
 Press **Ctrl+S** to open settings, where you choose which installed agents (Claude Code, Codex) to offer and change your limits.
 
 Every time you run `clqn` it asks which clan to open, and you can also create or join one there. Press Enter to reopen the clan you used last.
+
+## Try a first delegation
+
+Use a linked practice repository with a pull request check. Have a teammate join from their own clone, enable an agent in **Ctrl+S**, and keep **Spawn approval** set to **Manual**.
+
+1. Ask in chat, for example, “Ask a worker to add a short explanation of how to run the existing tests to the README. Keep the change limited to that file.”
+2. The assigned member reviews the proposed task in **Ctrl+P** and presses **Y** to approve it. When the worker finishes, open its pull request from the chat.
+3. Review the diff and checks in GitHub. If you want clqn to merge it, the leader selects that PR with **Ctrl+L** and approves the displayed commit with **Y**. Keep the leader's chat open while GitHub finishes its checks and applies repository merge rules.
+
+See the [repository workflow](repositories.md) for worktrees, review, and default-branch sync. For setup and connection problems, see [troubleshooting](troubleshooting.md). See [architecture and trust boundaries](architecture.md) for where requests and data go.
