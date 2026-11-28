@@ -307,7 +307,7 @@ export function settingsLines(settings: SettingsView, columns: number, paint: Pa
             : field === plannerLimitField
               ? `Planners         ${plain(settings.plannerText ?? '') || 'Auto'}`
               : field === orchestratorModelField && runtime
-                ? `Orchestrator model  ${plain(settings.agents?.orchestratorModels[runtime] ?? '') || 'Default'} (${runtimeNames[runtime]})`
+                ? `Host model       ${plain(settings.agents?.orchestratorModels[runtime] ?? '') || 'Default'} (${runtimeNames[runtime]})`
                 : labels[field]!;
       const line = clip(`${field === settings.field ? '›' : ' '} ${label}`, columns);
       return field === settings.field ? paint(line, 'accent') : line;

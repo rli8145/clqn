@@ -392,12 +392,17 @@ export async function runChat(
   }
 
   async function loadChoices() {
+    const currentSetup = setup;
+    const initialChoices = currentSetup?.agents;
     try {
-      saved = await agents?.choices(actor.id);
+      const choices = await agents?.choices(actor.id);
+      if (currentSetup && setup === currentSetup && !busy && currentSetup.agents === initialChoices) {
+        saved = choices;
+        currentSetup.agents = choices;
+      }
     } catch {
-      saved = undefined;
+      // Keep the last known choices if the refresh fails.
     }
-    if (setup && saved) setup.agents ??= saved;
     draw();
   }
 
@@ -684,7 +689,7 @@ export async function runChat(
     if (key.name === 'f2' && state) {
       const hosting = state.orchestration;
       const leader = hosting ? hosting.eligible && !hosting.backup : info.canStart;
-      setup = setupFor(state.settings, leader, hosting?.plannerLimit);
+      setup = { ...setupFor(state.settings, leader, hosting?.plannerLimit), agents: saved };
       void loadChoices();
       approvalFocused = false;
     } else if (key.name === 'f5') {

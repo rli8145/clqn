@@ -75,7 +75,7 @@ Press **Ctrl+S**. Move with **↑ ↓** (or **Tab**), change a value with **← 
 | Agent limit | How many of your agents can run at once. `none` for no limit |
 | Planners | Clan leader only. Set how many sub-orchestrators can plan at once. Blank or `Auto` allows up to five. Available memory can lower the number on any host, including backups |
 | Models | Comma-separated model IDs your agents may use. Blank allows any |
-| Orchestrator model | Clan leaders and nominated backups can enter a model ID for their local orchestrator runtime. A stronger reasoning model is recommended. Blank uses the runtime default. Changes apply to new routing and planning turns |
+| Host model | Clan leaders and nominated backups can enter a model ID for their local orchestrator runtime. A stronger reasoning model is recommended. Blank uses the runtime default. Changes apply to new routing and planning turns |
 | Worker commands | What your agents may run: **Off**, **Sandboxed** (default, inside the agent's sandbox), or **Unrestricted** |
 | Agents | Which installed agent CLIs (Claude Code, Codex) the orchestrator can use |
 | Backup hosting | Nominated [backup hosts](#set-up-backup-hosts) only. **On** lets this device host the orchestrator when the leader is offline |

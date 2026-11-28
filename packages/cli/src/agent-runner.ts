@@ -863,13 +863,17 @@ export function startAgentRunner(options: AgentRunnerOptions): AgentRunner {
       );
     },
     async choices(userId) {
-      const [installed, off, codex, claude] = await Promise.all([
+      const [installed, off, models] = await Promise.all([
         (options.runtimes ?? installedRuntimes)(),
         readAgentsOff(),
-        readOrchestratorModel(options.server, options.clanId, userId, 'codex'),
-        readOrchestratorModel(options.server, options.clanId, userId, 'claude'),
+        Promise.all(
+          runtimes.map(
+            async (runtime) =>
+              [runtime, await readOrchestratorModel(options.server, options.clanId, userId, runtime)] as const,
+          ),
+        ),
       ]);
-      return { installed, off, orchestratorModels: { codex, claude } };
+      return { installed, off, orchestratorModels: Object.fromEntries(models) as Record<Runtime, string> };
     },
     setOrchestratorModel: (userId, runtime, model) =>
       saveOrchestratorModel(options.server, options.clanId, userId, runtime, model),

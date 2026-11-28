@@ -74,8 +74,8 @@ test('host settings show the orchestrator model and recommend stronger reasoning
   };
   const render = (extra: Partial<Parameters<typeof settingsLines>[0]>) =>
     settingsLines({ ...settings, ...extra }, 65, painter(false), 20, '').join('\n');
-  assert.doesNotMatch(render({}), /Orchestrator model/);
-  assert.match(render({ orchestratorRuntime: 'codex' }), /› Orchestrator model  Default \(Codex\)/);
+  assert.doesNotMatch(render({}), /Host model/);
+  assert.match(render({ orchestratorRuntime: 'codex' }), /› Host model       Default \(Codex\)/);
   assert.match(render({ orchestratorRuntime: 'claude' }), /A stronger reasoning model is recommended/);
 });
 

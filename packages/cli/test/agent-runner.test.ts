@@ -212,7 +212,7 @@ for (const runtime of ['claude', 'codex'] as const) {
   });
 }
 
-test('the leader hosts with the selected model and can switch it for new turns', async (t) => {
+test('the leader hosts only with parallel orchestration and can switch models for new turns', async (t) => {
   const f = await fixture(t);
   const registered: { name: string; role: string; alias?: string | undefined }[] = [];
   const api = {
