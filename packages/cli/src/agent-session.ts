@@ -2,13 +2,17 @@ import { createHash } from 'node:crypto';
 import { constants, mkdirSync } from 'node:fs';
 import { access, readFile, stat } from 'node:fs/promises';
 import { delimiter, join, resolve } from 'node:path';
-import { agentRegistrationSchema, agentSchema, ClqnClient, type WorkerCommands } from '@clqn/shared';
+import { agentRegistrationSchema, agentSchema, ClqnClient, modelIdSchema, type WorkerCommands } from '@clqn/shared';
 import { configDirectory, writePrivateJson } from './config.js';
 
 export const runtimes = ['codex', 'claude'] as const;
 export type Runtime = (typeof runtimes)[number];
 
 export const runtimeNames: Record<Runtime, string> = { claude: 'Claude Code', codex: 'Codex' };
+
+export function orchestratorRuntime(installed: Runtime[], off: Runtime[], backup: boolean) {
+  return installed.find((runtime) => !off.includes(runtime)) ?? (backup ? undefined : installed[0]);
+}
 
 // On Windows, spawning `claude` without a shell also runs claude.com or claude.exe, and the native Claude Code
 // installer adds only claude.exe to PATH.
@@ -57,22 +61,46 @@ export function saveAgentsOff(off: Runtime[]): Promise<void> {
   return writePrivateJson(choicesPath(), { off: runtimes.filter((runtime) => off.includes(runtime)) });
 }
 
-// A separate atomic preference for each person, clan, and server on this machine.
-const backupHostingPath = (server: string, clanId: string, userId: string) => {
+// Keep hosting preferences local to this device, member, clan, and server.
+const hostingPath = (directory: string, server: string, clanId: string, userId: string) => {
   const key = JSON.stringify([new URL(server).origin, clanId, userId]);
-  return join(configDirectory(), 'backup-hosting', `${createHash('sha256').update(key).digest('hex')}.json`);
+  return join(configDirectory(), directory, `${createHash('sha256').update(key).digest('hex')}.json`);
 };
 
 export async function readBackupHosting(server: string, clanId: string, userId: string): Promise<boolean> {
   try {
-    return JSON.parse(await readFile(backupHostingPath(server, clanId, userId), 'utf8')) === true;
+    return JSON.parse(await readFile(hostingPath('backup-hosting', server, clanId, userId), 'utf8')) === true;
   } catch {
     return false;
   }
 }
 
 export function saveBackupHosting(server: string, clanId: string, userId: string, enabled: boolean): Promise<void> {
-  return writePrivateJson(backupHostingPath(server, clanId, userId), enabled);
+  return writePrivateJson(hostingPath('backup-hosting', server, clanId, userId), enabled);
+}
+
+const orchestratorModelId = modelIdSchema.refine((model) => !/^-|[\x00-\x1f\x7f-\x9f]/.test(model));
+
+export async function readOrchestratorModel(server: string, clanId: string, userId: string, runtime: Runtime) {
+  try {
+    const path = hostingPath(`orchestrator-model/${runtime}`, server, clanId, userId);
+    return orchestratorModelId.safeParse(JSON.parse(await readFile(path, 'utf8'))).data ?? '';
+  } catch {
+    return '';
+  }
+}
+
+export async function saveOrchestratorModel(
+  server: string,
+  clanId: string,
+  userId: string,
+  runtime: Runtime,
+  text: string,
+) {
+  const model = text.trim();
+  if (model && !orchestratorModelId.safeParse(model).success)
+    throw new Error('Enter a model ID without spaces, or leave it blank for the default');
+  await writePrivateJson(hostingPath(`orchestrator-model/${runtime}`, server, clanId, userId), model || null);
 }
 
 export type AgentProfile = {

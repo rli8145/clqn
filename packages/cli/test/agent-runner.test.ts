@@ -212,7 +212,7 @@ for (const runtime of ['claude', 'codex'] as const) {
   });
 }
 
-test('the leader hosts only when the API advertises parallel orchestration', async (t) => {
+test('the leader hosts only with parallel orchestration and can switch models for new turns', async (t) => {
   const f = await fixture(t);
   const registered: { name: string; role: string; alias?: string | undefined }[] = [];
   const api = {
@@ -231,18 +231,29 @@ test('the leader hosts only when the API advertises parallel orchestration', asy
   const pickId = randomUUID();
   const leaseIds: string[] = [];
   const routed: unknown[][] = [];
+  const planned: unknown[][] = [];
   const hostApi = {
     heartbeatChatLease: async (_clan: string, id: string) => {
       leaseIds.push(id);
       return { active: true };
     },
     releaseChatLease: async () => ({ active: false }),
-    chatInbox: async (_clan: string, id: string) => {
+    chatInbox: async (_clan: string, id: string, workId?: string) => {
       assert.equal(id, leaseIds[0]);
-      return { next: message, pickId, messages: [], held: [] };
+      return {
+        next: message,
+        pickId,
+        messages: [],
+        held: [],
+        ...(workId ? { workItem: { id: workId, title: 'Fix the links', status: 'queued' } } : {}),
+      };
     },
+    listAgents: async () => ({ agents: listed }),
     routeChat: async (...args: unknown[]) => {
       routed.push(args);
+    },
+    decideChat: async (...args: unknown[]) => {
+      planned.push(args);
     },
   } as unknown as ClqnClient;
   const runner = startAgentRunner({
@@ -256,6 +267,12 @@ test('the leader hosts only when the API advertises parallel orchestration', asy
     agentClient: () => hostApi,
   });
   t.after(() => runner.stop());
+
+  await assert.rejects(runner.setOrchestratorModel(userId, 'claude', '--model'), /Enter a model ID/);
+  await runner.setOrchestratorModel(userId, 'codex', 'other-runtime-model');
+  await runner.setOrchestratorModel(userId, 'claude', 'opus');
+  assert.equal((await runner.choices(userId)).orchestratorModels.claude, 'opus');
+  assert.equal((await runner.choices(randomUUID())).orchestratorModels.claude, '');
 
   const { work: _work, ...preParallel } = hostingState(message.id, { queued: 1, messages: [message] });
   runner.update(preParallel);
@@ -276,6 +293,7 @@ test('the leader hosts only when the API advertises parallel orchestration', asy
   const run = f.spawned[0]!;
   await until(() => run.child.input.includes('Fix the links'));
   assert.equal(run.command, 'claude');
+  assert.equal(run.args[run.args.indexOf('--model') + 1], 'opus');
   assert.ok(run.args.includes('--strict-mcp-config'));
   assert.ok(run.args.includes('--disable-slash-commands'));
   assert.equal(run.args[run.args.indexOf('--tools') + 1], '');
@@ -286,6 +304,8 @@ test('the leader hosts only when the API advertises parallel orchestration', asy
   assert.equal(run.env.CLQN_AGENT_PROFILE, undefined);
   assert.notEqual(run.cwd, f.directory, 'planning does not load the worktree configuration');
   assert.equal(runner.status(), 'Routing message');
+  await runner.setOrchestratorModel(userId, 'claude', 'sonnet');
+  assert.equal(run.child.killed, false);
   runner.update(hostingState(message.id));
   assert.equal(f.spawned.length, 1);
   run.child.finish(0, JSON.stringify({ result: JSON.stringify({ action: 'reply', text: 'Acknowledged' }) }));
@@ -296,6 +316,18 @@ test('the leader hosts only when the API advertises parallel orchestration', asy
     { action: 'reply', text: 'Acknowledged', pickId },
     leaseIds[0],
   ]);
+
+  const workId = randomUUID();
+  runner.update(hostingState(null, { work: { pending: null, ready: [workId] } }));
+  await until(() => f.spawned.length === 2);
+  const planner = f.spawned[1]!;
+  assert.equal(planner.args[planner.args.indexOf('--model') + 1], 'sonnet');
+  planner.child.finish(0, JSON.stringify({ result: JSON.stringify({ action: 'reply', text: 'Planned' }) }));
+  await until(() => planned.length === 1);
+  assert.equal(planned[0]?.[3], leaseIds[0]);
+  assert.equal(leaseIds.length, 1);
+  await runner.setOrchestratorModel(userId, 'claude', '');
+  assert.deepEqual((await runner.choices(userId)).orchestratorModels, { codex: 'other-runtime-model', claude: '' });
 });
 
 test('a backup opts in locally and fences lease loss, opt-out and revocation without killing workers', async (t) => {
@@ -1078,7 +1110,8 @@ test('each installed agent that is on becomes a worker; turning one off revokes 
   });
   t.after(() => runner.stop());
 
-  assert.deepEqual(await runner.choices(), { installed: ['codex', 'claude'], off: [] });
+  const choices = { installed: ['codex', 'claude'], off: [], orchestratorModels: { codex: '', claude: '' } };
+  assert.deepEqual(await runner.choices(userId), choices);
   runner.update(chatState());
   await until(() => calls.length === 1);
   assert.deepEqual(calls, ['register Claude Code (member) claude-member']);
@@ -1092,7 +1125,7 @@ test('each installed agent that is on becomes a worker; turning one off revokes 
   await runner.choose([]);
   await until(() => calls.length === 3);
   assert.equal(calls[2], 'rotate codex');
-  assert.deepEqual(await runner.choices(), { installed: ['codex', 'claude'], off: [] });
+  assert.deepEqual(await runner.choices(userId), choices);
 });
 
 test('workers run commands as the member allows: off, sandboxed by default, or unrestricted', async (t) => {

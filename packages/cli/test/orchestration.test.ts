@@ -227,11 +227,12 @@ test('losing the host lease cancels all turns before they can submit decisions',
   assert.deepEqual(coordinator.status(), []);
 });
 
-test('a continuation keeps the task and previous worker', async () => {
+test('a continuation keeps the task and previous worker and forwards the chosen model', async () => {
   const clanId = randomUUID();
   const workId = randomUUID();
   const workerId = randomUUID();
   const taskId = randomUUID();
+  const model = 'review-model';
   const next = message(randomUUID(), 'Continue the stopped feature');
   const tasks: Promise<void>[] = [];
   const submitted: ChatDecisionRequest[] = [];
@@ -251,7 +252,7 @@ test('a continuation keeps the task and previous worker', async () => {
     }),
     listAgents: async () => ({
       agents: [
-        { id: workerId, name: 'Previous worker', role: 'worker' },
+        { id: workerId, name: 'Previous worker', role: 'worker', allowedModels: [model] },
         { id: randomUUID(), name: 'Other worker', role: 'worker' },
       ],
     }),
@@ -270,10 +271,12 @@ test('a continuation keeps the task and previous worker', async () => {
         modelInput.workers.map(({ id }: { id: string }) => id),
         [workerId],
       );
+      assert.deepEqual(modelInput.workers[0].allowedModels, [model]);
       return JSON.stringify({
         action: 'delegate',
         taskId,
         workerId,
+        model,
         title: 'Feature',
         description: next.text,
         estimatedTokens: 5000,
@@ -291,4 +294,5 @@ test('a continuation keeps the task and previous worker', async () => {
   assert.equal(submitted[0]?.action, 'delegate');
   assert.equal(submitted[0]?.taskId, taskId);
   assert.equal(submitted[0]?.workerId, workerId);
+  assert.equal(submitted[0]?.model, model);
 });

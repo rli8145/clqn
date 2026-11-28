@@ -34,7 +34,7 @@ Or with Homebrew:
 
 ```sh
 brew tap clqn-org/clqn https://github.com/clqn-org/clqn
-brew install clqn
+brew install clqn-org/clqn/clqn
 ```
 
 You'll need Node.js 22.12+, Git, the GitHub CLI (`gh`), and [Claude Code](https://claude.com/claude-code) or [Codex CLI](https://github.com/openai/codex).

@@ -2,7 +2,7 @@
   "name": "clqn",
   "homepage": "https://clqn.org/",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.4.1",
   "type": "module",
   "workspaces": [
     "packages/shared",
@@ -30,8 +30,8 @@
     "user": "npm run user --workspace @clqn/api --"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.6.8",
-    "@types/node": "^26.6.6",
+    "@biomejs/biome": "2.6.9",
+    "@types/node": "^26.6.10",
     "esbuild": "0.28.2",
     "tsx": "^4.20.0",
     "typescript": "^7.0.2"

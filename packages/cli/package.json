@@ -1,6 +1,6 @@
 {
   "name": "@clqn/cli",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "type": "module",
   "bin": {
@@ -11,8 +11,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@clqn/shared": "0.4.0",
-    "@clqn/mcp": "0.4.0",
+    "@clqn/shared": "0.4.1",
+    "@clqn/mcp": "0.4.1",
     "commander": "^15.1.0"
   }
 }
